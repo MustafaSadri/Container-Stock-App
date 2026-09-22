@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: platina-stock
+    runtime: node
+    plan: starter
+    region: oregon
+    branch: main
+    buildCommand: npm install && npm run build
+    startCommand: npx prisma migrate deploy --schema server/prisma/schema.prisma && npx ts-node server/prisma/seed.ts && npm run start --workspace server
+    healthCheckPath: /api/health
+    disk:
+      name: platina-stock-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_URL
+        value: file:/data/prod.db
+      - key: PORT
+        value: 4000
+      - key: NODE_VERSION
+        value: 20.15.0

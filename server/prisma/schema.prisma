@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Container {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  location  String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stockItems       StockItem[]
+  outgoing         Transaction[] @relation("SourceContainer")
+  incoming         Transaction[] @relation("DestContainer")
+}
+
+model Product {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  brand     String?
+  category  String?
+  group     String?
+  unit      String   @default("pcs")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  flavours Flavour[]
+}
+
+model Flavour {
+  id                String   @id @default(cuid())
+  productId         String
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  nameEn            String
+  nameRu            String?
+  code              String?  @unique
+  costPrice         Float?
+  salePrice         Float?
+  lowStockThreshold Int      @default(50)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  stockItems   StockItem[]
+  transactions Transaction[]
+
+  @@unique([productId, nameEn])
+}
+
+model StockItem {
+  id          String   @id @default(cuid())
+  flavourId   String
+  flavour     Flavour  @relation(fields: [flavourId], references: [id], onDelete: Cascade)
+  containerId String
+  container   Container @relation(fields: [containerId], references: [id], onDelete: Cascade)
+  quantity    Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  @@unique([flavourId, containerId])
+}
+
+// SQLite has no native enum support in Prisma; type is validated in application code.
+// One of: ADD | REMOVE | TRANSFER | ADJUST | IMPORT
+model Transaction {
+  id                  String     @id @default(cuid())
+  type                String
+  flavourId           String
+  flavour             Flavour    @relation(fields: [flavourId], references: [id], onDelete: Cascade)
+  quantity             Int
+  sourceContainerId   String?
+  sourceContainer     Container? @relation("SourceContainer", fields: [sourceContainerId], references: [id])
+  destContainerId     String?
+  destContainer       Container? @relation("DestContainer", fields: [destContainerId], references: [id])
+  previousStockSource Int?
+  newStockSource      Int?
+  previousStockDest   Int?
+  newStockDest        Int?
+  note                String?
+  reference           String?
+  batchId             String?
+  createdAt           DateTime   @default(now())
+
+  @@index([flavourId])
+  @@index([sourceContainerId])
+  @@index([destContainerId])
+  @@index([createdAt])
+  @@index([batchId])
+}
