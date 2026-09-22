@@ -30,11 +30,18 @@ export function Transactions() {
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
 
+  const reportUrl = `/api/reports/transactions.csv${qs({ type: type || undefined, containerId: containerId || undefined })}`;
+
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-bold text-slate-900">Transaction history</h1>
-        <p className="text-sm text-slate-500">Every stock change, ever</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Transaction history</h1>
+          <p className="text-sm text-slate-500">Every stock change, ever</p>
+        </div>
+        <a href={reportUrl} download className="btn-secondary shrink-0 text-xs">
+          ⬇ CSV
+        </a>
       </div>
 
       <div className="flex flex-wrap gap-2">

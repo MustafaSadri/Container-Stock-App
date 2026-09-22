@@ -5,8 +5,9 @@ import { api } from "../api/client";
 import { Container, FlavourDetail, ProductDetail as ProductDetailType, Transaction } from "../types";
 import { Loading, ErrorState } from "../components/Feedback";
 import { StockActionModal } from "../components/StockActionModal";
+import { TransactionList } from "../components/TransactionList";
 import { useToast } from "../components/ToastProvider";
-import { formatQty, formatDate, transactionLabel, transactionBadgeClass } from "../lib/format";
+import { formatQty } from "../lib/format";
 
 export function ProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -121,21 +122,11 @@ function FlavourHistory({ flavourId }: { flavourId: string }) {
   });
 
   if (isLoading) return <p className="py-3 text-xs text-slate-400">Loading history...</p>;
-  if (!data || data.length === 0) return <p className="py-3 text-xs text-slate-400">No transactions yet.</p>;
 
   return (
-    <ul className="mt-2 divide-y divide-slate-100 border-t border-slate-100">
-      {data.map((t) => (
-        <li key={t.id} className="flex items-center justify-between gap-2 py-2 text-xs">
-          <div className="min-w-0">
-            <span className={`badge mr-2 ${transactionBadgeClass(t.type)}`}>{t.type}</span>
-            <span className="text-slate-700">{transactionLabel(t)}</span>
-            {t.note && <p className="truncate text-slate-400">{t.note}</p>}
-          </div>
-          <span className="shrink-0 text-slate-400">{formatDate(t.createdAt)}</span>
-        </li>
-      ))}
-    </ul>
+    <div className="mt-2 border-t border-slate-100">
+      <TransactionList transactions={data ?? []} />
+    </div>
   );
 }
 

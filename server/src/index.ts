@@ -7,6 +7,7 @@ import { productsRouter } from "./routes/products";
 import { stockRouter } from "./routes/stock";
 import { transactionsRouter } from "./routes/transactions";
 import { dashboardRouter } from "./routes/dashboard";
+import { reportsRouter } from "./routes/reports";
 import { errorHandler } from "./middleware/errorHandler";
 
 const app = express();
@@ -21,6 +22,7 @@ app.use("/api/products", productsRouter);
 app.use("/api/stock", stockRouter);
 app.use("/api/transactions", transactionsRouter);
 app.use("/api/dashboard", dashboardRouter);
+app.use("/api/reports", reportsRouter);
 
 // Serve the built frontend in production (single-service deployment)
 const clientDist = path.join(__dirname, "..", "public");

@@ -19,9 +19,14 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-slate-900">Dashboard</h1>
-        <p className="text-sm text-slate-500">Overview of your entire inventory</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Dashboard</h1>
+          <p className="text-sm text-slate-500">Overview of your entire inventory</p>
+        </div>
+        <a href="/api/reports/stock.csv" download className="btn-secondary shrink-0 text-xs">
+          ⬇ Download report
+        </a>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -70,72 +75,28 @@ export function Dashboard() {
               </div>
             ))}
           </div>
-
-          <h2 className="mb-3 mt-6 text-sm font-semibold text-slate-900">Top products by stock</h2>
-          <ol className="space-y-1.5 text-xs text-slate-600">
-            {data.topProducts.map((p, i) => (
-              <li key={p.productName} className="flex items-center justify-between">
-                <span className="truncate pr-2">
-                  {i + 1}. {p.productName}
-                </span>
-                <span className="shrink-0 font-medium text-slate-800">{formatQty(p.totalStock)}</span>
-              </li>
-            ))}
-          </ol>
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="card p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-900">Low stock alerts</h2>
-            <span className="badge bg-red-50 text-red-700">{data.lowStockItems.length}</span>
-          </div>
-          {data.lowStockItems.length === 0 ? (
-            <p className="py-6 text-center text-xs text-slate-400">Nothing is low on stock right now.</p>
-          ) : (
-            <ul className="divide-y divide-slate-100">
-              {data.lowStockItems.map((item) => (
-                <li key={`${item.flavourId}-${item.containerName}`} className="flex items-center justify-between py-2 text-xs">
-                  <div className="min-w-0 pr-2">
-                    <p className="truncate font-medium text-slate-800">
-                      {item.productName} — {item.flavourNameEn}
-                    </p>
-                    <p className="truncate text-slate-400">{item.containerName}</p>
-                  </div>
-                  <span
-                    className={`badge shrink-0 ${
-                      item.quantity <= 0 ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
-                    }`}
-                  >
-                    {item.quantity} / {item.threshold}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="card p-4">
-          <h2 className="mb-3 text-sm font-semibold text-slate-900">Recent transactions</h2>
-          {data.recentTransactions.length === 0 ? (
-            <p className="py-6 text-center text-xs text-slate-400">No transactions yet.</p>
-          ) : (
-            <ul className="divide-y divide-slate-100">
-              {data.recentTransactions.map((t) => (
-                <li key={t.id} className="py-2 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-slate-800">{transactionLabel(t)}</span>
-                    <span className="text-slate-400">{formatDate(t.createdAt)}</span>
-                  </div>
-                  <p className="truncate text-slate-500">
-                    {t.flavour.product.name} — {t.flavour.nameEn}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+      <div className="card p-4">
+        <h2 className="mb-3 text-sm font-semibold text-slate-900">Recent transactions</h2>
+        {data.recentTransactions.length === 0 ? (
+          <p className="py-6 text-center text-xs text-slate-400">No transactions yet.</p>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {data.recentTransactions.map((t) => (
+              <li key={t.id} className="py-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-slate-800">{transactionLabel(t)}</span>
+                  <span className="text-slate-400">{formatDate(t.createdAt)}</span>
+                </div>
+                <p className="truncate text-slate-500">
+                  {t.flavour.product.name} — {t.flavour.nameEn}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

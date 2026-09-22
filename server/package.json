@@ -13,6 +13,7 @@
     "db:migrate": "prisma migrate deploy || prisma migrate dev --name init",
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "ts-node prisma/seed.ts",
+    "db:reset-stock": "ts-node prisma/reset-containers.ts",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate"
   },

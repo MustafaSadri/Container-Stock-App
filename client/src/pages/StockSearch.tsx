@@ -4,7 +4,56 @@ import { api, qs } from "../api/client";
 import { Container, StockRow } from "../types";
 import { Loading, ErrorState, EmptyState } from "../components/Feedback";
 import { StockActionModal } from "../components/StockActionModal";
+import { FlavourHistoryModal } from "../components/FlavourHistoryModal";
 import { formatQty } from "../lib/format";
+
+interface FlavourGroup {
+  flavourId: string;
+  productId: string;
+  productName: string;
+  flavourNameEn: string;
+  flavourNameRu: string | null;
+  code: string | null;
+  category: string | null;
+  brand: string | null;
+  lowStockThreshold: number;
+  totalQty: number;
+  isLowStock: boolean;
+  containers: { containerId: string; containerName: string; location: string | null; quantity: number }[];
+}
+
+function groupByFlavour(rows: StockRow[]): FlavourGroup[] {
+  const map = new Map<string, FlavourGroup>();
+  for (const r of rows) {
+    let g = map.get(r.flavourId);
+    if (!g) {
+      g = {
+        flavourId: r.flavourId,
+        productId: r.productId,
+        productName: r.productName,
+        flavourNameEn: r.flavourNameEn,
+        flavourNameRu: r.flavourNameRu,
+        code: r.code,
+        category: r.category,
+        brand: r.brand,
+        lowStockThreshold: r.lowStockThreshold,
+        totalQty: 0,
+        isLowStock: false,
+        containers: [],
+      };
+      map.set(r.flavourId, g);
+    }
+    g.totalQty += r.quantity;
+    g.containers.push({ containerId: r.containerId, containerName: r.containerName, location: r.location, quantity: r.quantity });
+  }
+  const groups = Array.from(map.values());
+  for (const g of groups) {
+    g.isLowStock = g.totalQty <= g.lowStockThreshold;
+    g.containers.sort((a, b) => b.quantity - a.quantity);
+  }
+  groups.sort((a, b) => b.totalQty - a.totalQty);
+  return groups;
+}
 
 export function StockSearch() {
   const [search, setSearch] = useState("");
@@ -15,7 +64,8 @@ export function StockSearch() {
   const [minQty, setMinQty] = useState("");
   const [maxQty, setMaxQty] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [actionRow, setActionRow] = useState<StockRow | null>(null);
+  const [actionGroup, setActionGroup] = useState<FlavourGroup | null>(null);
+  const [historyGroup, setHistoryGroup] = useState<FlavourGroup | null>(null);
 
   const { data: containers } = useQuery({
     queryKey: ["containers"],
@@ -45,13 +95,22 @@ export function StockSearch() {
     queryFn: () => api.get<StockRow[]>(`/stock${qs(params)}`),
   });
 
+  const groups = useMemo(() => (data ? groupByFlavour(data) : []), [data]);
+
   const activeFilterCount = [containerId, category, brand, lowStockOnly, minQty, maxQty].filter(Boolean).length;
+
+  const reportUrl = `/api/reports/stock.csv${qs({ search: search || undefined, category: category || undefined, brand: brand || undefined })}`;
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-bold text-slate-900">Stock</h1>
-        <p className="text-sm text-slate-500">Search and filter across every container</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Stock</h1>
+          <p className="text-sm text-slate-500">Search by product or model — see stock across every container</p>
+        </div>
+        <a href={reportUrl} download className="btn-secondary shrink-0 text-xs">
+          ⬇ CSV
+        </a>
       </div>
 
       <div className="flex gap-2">
@@ -143,35 +202,47 @@ export function StockSearch() {
 
       {isLoading && <Loading />}
       {error && <ErrorState message="Could not load stock." />}
-      {data && data.length === 0 && <EmptyState message="No stock items match your filters." />}
+      {groups.length === 0 && !isLoading && <EmptyState message="No stock items match your filters." />}
 
-      {data && data.length > 0 && (
+      {groups.length > 0 && (
         <>
-          <p className="text-xs text-slate-500">{data.length} result{data.length === 1 ? "" : "s"}</p>
+          <p className="text-xs text-slate-500">
+            {groups.length} flavour{groups.length === 1 ? "" : "s"}
+          </p>
           <div className="space-y-2">
-            {data.map((row) => (
-              <div key={row.stockItemId} className="card flex items-center justify-between gap-3 p-3">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-slate-900">
-                    {row.productName} — {row.flavourNameEn}
-                  </p>
-                  <p className="truncate text-xs text-slate-500">
-                    {row.flavourNameRu ? `${row.flavourNameRu} · ` : ""}
-                    {row.containerName}
-                    {row.location ? ` · ${row.location}` : ""}
-                    {row.code ? ` · #${row.code}` : ""}
-                  </p>
+            {groups.map((g) => (
+              <div key={g.flavourId} className="card p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-900">
+                      {g.productName} — {g.flavourNameEn}
+                    </p>
+                    <p className="truncate text-xs text-slate-500">
+                      {g.flavourNameRu ? `${g.flavourNameRu} · ` : ""}
+                      {g.code ? `#${g.code}` : g.category}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className={`text-sm font-semibold ${g.isLowStock ? "text-red-600" : "text-slate-900"}`}>
+                      {formatQty(g.totalQty)}
+                    </span>
+                    <button className="btn-secondary px-3 py-2 text-xs" onClick={() => setActionGroup(g)}>
+                      Update
+                    </button>
+                  </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-3">
-                  <span
-                    className={`text-sm font-semibold ${
-                      row.isLowStock ? "text-red-600" : "text-slate-900"
-                    }`}
+
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  {g.containers.map((c) => (
+                    <span key={c.containerId} className="badge bg-slate-100 text-slate-600">
+                      {c.containerName}: {formatQty(c.quantity)}
+                    </span>
+                  ))}
+                  <button
+                    className="ml-auto text-xs text-brand-600 hover:underline"
+                    onClick={() => setHistoryGroup(g)}
                   >
-                    {formatQty(row.quantity)}
-                  </span>
-                  <button className="btn-secondary px-3 py-2 text-xs" onClick={() => setActionRow(row)}>
-                    Update
+                    History
                   </button>
                 </div>
               </div>
@@ -180,14 +251,22 @@ export function StockSearch() {
         </>
       )}
 
-      {actionRow && containers && (
+      {actionGroup && containers && (
         <StockActionModal
-          flavourId={actionRow.flavourId}
-          flavourLabel={`${actionRow.productName} — ${actionRow.flavourNameEn}`}
+          flavourId={actionGroup.flavourId}
+          flavourLabel={`${actionGroup.productName} — ${actionGroup.flavourNameEn}`}
           containers={containers}
-          defaultContainerId={actionRow.containerId}
-          currentQuantity={actionRow.quantity}
-          onClose={() => setActionRow(null)}
+          defaultContainerId={actionGroup.containers[0]?.containerId}
+          currentQuantity={actionGroup.containers[0]?.quantity}
+          onClose={() => setActionGroup(null)}
+        />
+      )}
+
+      {historyGroup && (
+        <FlavourHistoryModal
+          flavourId={historyGroup.flavourId}
+          flavourLabel={`${historyGroup.productName} — ${historyGroup.flavourNameEn}`}
+          onClose={() => setHistoryGroup(null)}
         />
       )}
     </div>
