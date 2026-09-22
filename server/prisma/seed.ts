@@ -36,30 +36,21 @@ function inferBrand(productName: string): string {
   return productName.split(" ")[0];
 }
 
+// Seeds the product/flavour catalog only — no containers, no stock, no transactions.
+// Quantities from the original stock report are intentionally not imported: stock starts
+// at zero everywhere, and containers are created and stocked by the user from the app.
 async function main() {
   const dataPath = path.join(__dirname, "seed-data", "initial-stock.json");
   const rows: SeedRow[] = JSON.parse(fs.readFileSync(dataPath, "utf-8"));
 
-  const existingContainers = await prisma.container.count();
-  if (existingContainers > 0) {
-    console.log("Database already has containers — skipping seed to avoid duplicate import.");
-    console.log("Delete server/prisma/dev.db and re-run `npm run db:migrate && npm run db:seed` to reseed from scratch.");
+  const existingProducts = await prisma.product.count();
+  if (existingProducts > 0) {
+    console.log("Database already has products — skipping catalog seed.");
     return;
   }
 
-  const container = await prisma.container.create({
-    data: {
-      name: "Platina - Main Store",
-      location: "Main warehouse (set actual address)",
-      notes: "Default container created from initial stock import.",
-    },
-  });
-
-  console.log(`Created default container: ${container.name}`);
-
   const productCache = new Map<string, string>();
   let flavourCount = 0;
-  let skippedDuplicates = 0;
 
   for (const row of rows) {
     let productId = productCache.get(row.product);
@@ -82,12 +73,9 @@ async function main() {
     const existingFlavour = await prisma.flavour.findUnique({
       where: { productId_nameEn: { productId, nameEn: row.flavourEn } },
     });
-    if (existingFlavour) {
-      skippedDuplicates++;
-      continue;
-    }
+    if (existingFlavour) continue;
 
-    const flavour = await prisma.flavour.create({
+    await prisma.flavour.create({
       data: {
         productId,
         nameEn: row.flavourEn,
@@ -96,31 +84,12 @@ async function main() {
       },
     });
 
-    await prisma.stockItem.create({
-      data: {
-        flavourId: flavour.id,
-        containerId: container.id,
-        quantity: row.qty,
-      },
-    });
-
-    await prisma.transaction.create({
-      data: {
-        type: "IMPORT",
-        flavourId: flavour.id,
-        quantity: row.qty,
-        destContainerId: container.id,
-        previousStockDest: 0,
-        newStockDest: row.qty,
-        note: "Initial stock import from existing inventory report",
-        reference: row.code,
-      },
-    });
-
     flavourCount++;
   }
 
-  console.log(`Seed complete: ${productCache.size} products, ${flavourCount} flavours imported${skippedDuplicates ? `, ${skippedDuplicates} duplicates skipped` : ""}.`);
+  console.log(
+    `Catalog seed complete: ${productCache.size} products, ${flavourCount} flavours. No containers or stock were created — add your own from the app.`
+  );
 }
 
 main()

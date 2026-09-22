@@ -2,7 +2,7 @@
 
 A fast, mobile-friendly inventory system for tracking stock across multiple warehouses/containers, by product, model and flavour. Built to replace spreadsheet-based stock tracking with real transaction history, low-stock alerts, and quick bulk entry.
 
-Your existing stock report (336 SKUs across ELFBAR, TOMORO, LOST MARY, and other product lines, ~541,118 units) has already been imported into a default container called **"Platina - Main Store"**.
+Your existing product catalog (336 flavours across ELFBAR, TOMORO, LOST MARY, and other product lines, 29 products/models) is pre-loaded, so you don't have to re-create every flavour by hand. Stock starts at **zero** with **no containers** — create your own containers from the app and add opening quantities yourself.
 
 ## Tech stack
 
@@ -33,7 +33,7 @@ cd client && npm install && cd ..
 # 2. Set up the database (creates server/prisma/dev.db and imports your stock data)
 cd server
 npm run db:migrate:dev   # first time only — creates the SQLite file & schema
-npm run db:seed          # imports the 336 SKUs from your stock report
+npm run db:seed          # loads the 336-flavour product catalog (no stock, no containers)
 cd ..
 
 # 3. Run both the API and the frontend dev server
@@ -45,7 +45,7 @@ npm run dev
 
 Open `http://localhost:5173` in your browser (or on your phone, if it's on the same network as your computer — use your computer's local IP instead of `localhost`).
 
-If you ever want to start over with a clean database, delete `server/prisma/dev.db` and re-run the migrate + seed steps above (the seed script refuses to run again if containers already exist, to avoid duplicate imports).
+If you ever want to start over with a clean database, delete `server/prisma/dev.db` and re-run the migrate + seed steps above (the seed script refuses to run again if products already exist, to avoid duplicate imports). To wipe just your containers/stock/transactions and keep the product catalog, run `npm run db:reset-stock` from `server/` instead.
 
 ## How the data is modeled
 
@@ -75,7 +75,7 @@ This repo includes a `render.yaml` blueprint, so deployment is a few clicks:
 2. In Render, choose **New > Blueprint** and point it at the repo. Render will read `render.yaml` and provision:
    - One **Web Service** (`platina-stock`) that builds the client, builds the server, and serves both from a single Node process.
    - One **1 GB persistent disk** mounted at `/data`, so your SQLite database survives deploys and restarts.
-3. On first deploy, the start command automatically runs the database migration and — if the database is empty — imports your original stock data, so the live app comes up pre-populated.
+3. On first deploy, the start command automatically runs the database migration and — if the database is empty — loads the product catalog (no containers, no stock), so the live app comes up ready for you to create containers and enter opening quantities.
 4. Once deployed, Render gives you a public URL for the app. No further configuration is required.
 
 If you'd rather set it up manually instead of via the blueprint: create a Node web service, add a persistent disk at `/data`, set `DATABASE_URL=file:/data/prod.db`, build command `npm install && npm run build`, and start command `npx prisma migrate deploy --schema server/prisma/schema.prisma && npx ts-node server/prisma/seed.ts && npm run start --workspace server`.
