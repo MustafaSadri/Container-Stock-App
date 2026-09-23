@@ -3,6 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { Container } from "../types";
 import { useToast } from "./ToastProvider";
+import { NumberInput } from "./NumberInput";
+import { toLocalDatetimeInputValue } from "../lib/format";
 
 type Mode = "ADD" | "REMOVE" | "TRANSFER" | "ADJUST";
 
@@ -33,6 +35,7 @@ export function StockActionModal({
   const [quantity, setQuantity] = useState("");
   const [newQuantity, setNewQuantity] = useState(currentQuantity !== undefined ? String(currentQuantity) : "");
   const [note, setNote] = useState("");
+  const [date, setDate] = useState(() => toLocalDatetimeInputValue(new Date()));
   const [allowNegative, setAllowNegative] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,8 +56,9 @@ export function StockActionModal({
   const mutation = useMutation({
     mutationFn: async () => {
       setError(null);
+      const isoDate = date ? new Date(date).toISOString() : undefined;
       if (mode === "ADD") {
-        return api.post("/stock/add", { flavourId, containerId, quantity: Number(quantity), note: note || undefined });
+        return api.post("/stock/add", { flavourId, containerId, quantity: Number(quantity), note: note || undefined, date: isoDate });
       }
       if (mode === "REMOVE") {
         return api.post("/stock/remove", {
@@ -63,6 +67,7 @@ export function StockActionModal({
           quantity: Number(quantity),
           note: note || undefined,
           allowNegative,
+          date: isoDate,
         });
       }
       if (mode === "TRANSFER") {
@@ -73,6 +78,7 @@ export function StockActionModal({
           quantity: Number(quantity),
           note: note || undefined,
           allowNegative,
+          date: isoDate,
         });
       }
       return api.post("/stock/adjust", {
@@ -80,6 +86,7 @@ export function StockActionModal({
         containerId,
         newQuantity: Number(newQuantity),
         note: note || undefined,
+        date: isoDate,
       });
     },
     onSuccess: () => {
@@ -168,28 +175,19 @@ export function StockActionModal({
           {mode === "ADJUST" ? (
             <div>
               <label className="label">New quantity (absolute value)</label>
-              <input
-                type="number"
-                className="input"
-                value={newQuantity}
-                onChange={(e) => setNewQuantity(e.target.value)}
-                placeholder="e.g. 120"
-              />
+              <NumberInput value={newQuantity} onChange={(e) => setNewQuantity(e.target.value)} placeholder="e.g. 120" />
             </div>
           ) : (
             <div>
               <label className="label">Quantity</label>
-              <input
-                type="number"
-                min={1}
-                className="input"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                placeholder="e.g. 20"
-                autoFocus
-              />
+              <NumberInput min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="e.g. 20" autoFocus />
             </div>
           )}
+
+          <div>
+            <label className="label">Date &amp; time</label>
+            <input type="datetime-local" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
 
           <div>
             <label className="label">Note / reference (optional)</label>

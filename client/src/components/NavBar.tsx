@@ -54,13 +54,13 @@ export function NavBar() {
             to={l.to}
             end={l.end}
             className={({ isActive }) =>
-              `flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium ${
+              `flex min-w-0 flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium leading-tight ${
                 isActive ? "text-brand-600" : "text-slate-500"
               }`
             }
           >
-            <l.icon className="h-5 w-5" />
-            {l.label}
+            <l.icon className="h-5 w-5 shrink-0" />
+            <span className="max-w-full truncate px-0.5">{l.label}</span>
           </NavLink>
         ))}
       </nav>

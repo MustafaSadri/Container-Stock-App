@@ -4,6 +4,12 @@ export function formatQty(n: number): string {
   return n.toLocaleString("en-US");
 }
 
+// "YYYY-MM-DDTHH:mm" in local time, suitable as the default value of an <input type="datetime-local">
+export function toLocalDatetimeInputValue(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 export function formatDate(iso: string): string {
   const d = new Date(iso);
   const now = new Date();

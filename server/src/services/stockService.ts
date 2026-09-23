@@ -12,6 +12,13 @@ export const TransactionType = {
 
 type Tx = Prisma.TransactionClient;
 
+function parseDate(date?: string): Date | undefined {
+  if (!date) return undefined;
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) throw new AppError("Invalid transaction date.");
+  return parsed;
+}
+
 async function getOrCreateStockItem(tx: Tx, flavourId: string, containerId: string) {
   const existing = await tx.stockItem.findUnique({
     where: { flavourId_containerId: { flavourId, containerId } },
@@ -27,10 +34,12 @@ export interface AddStockInput {
   note?: string;
   reference?: string;
   batchId?: string;
+  date?: string;
 }
 
 export async function addStock(input: AddStockInput) {
   if (input.quantity <= 0) throw new AppError("Quantity must be greater than zero.");
+  const createdAt = parseDate(input.date);
 
   return prisma.$transaction(async (tx) => {
     const stockItem = await getOrCreateStockItem(tx, input.flavourId, input.containerId);
@@ -50,6 +59,7 @@ export async function addStock(input: AddStockInput) {
         note: input.note,
         reference: input.reference,
         batchId: input.batchId,
+        ...(createdAt ? { createdAt } : {}),
       },
       include: { flavour: { include: { product: true } }, destContainer: true, sourceContainer: true },
     });
@@ -64,10 +74,12 @@ export interface RemoveStockInput {
   reference?: string;
   allowNegative?: boolean;
   batchId?: string;
+  date?: string;
 }
 
 export async function removeStock(input: RemoveStockInput) {
   if (input.quantity <= 0) throw new AppError("Quantity must be greater than zero.");
+  const createdAt = parseDate(input.date);
 
   return prisma.$transaction(async (tx) => {
     const stockItem = await getOrCreateStockItem(tx, input.flavourId, input.containerId);
@@ -94,6 +106,7 @@ export async function removeStock(input: RemoveStockInput) {
         note: input.note,
         reference: input.reference,
         batchId: input.batchId,
+        ...(createdAt ? { createdAt } : {}),
       },
       include: { flavour: { include: { product: true } }, destContainer: true, sourceContainer: true },
     });
@@ -109,6 +122,7 @@ export interface TransferStockInput {
   reference?: string;
   allowNegative?: boolean;
   batchId?: string;
+  date?: string;
 }
 
 export async function transferStock(input: TransferStockInput) {
@@ -116,6 +130,7 @@ export async function transferStock(input: TransferStockInput) {
   if (input.sourceContainerId === input.destContainerId) {
     throw new AppError("Source and destination containers must be different.");
   }
+  const createdAt = parseDate(input.date);
 
   return prisma.$transaction(async (tx) => {
     const sourceItem = await getOrCreateStockItem(tx, input.flavourId, input.sourceContainerId);
@@ -149,6 +164,7 @@ export async function transferStock(input: TransferStockInput) {
         note: input.note,
         reference: input.reference,
         batchId: input.batchId,
+        ...(createdAt ? { createdAt } : {}),
       },
       include: { flavour: { include: { product: true } }, destContainer: true, sourceContainer: true },
     });
@@ -161,9 +177,11 @@ export interface AdjustStockInput {
   newQuantity: number;
   note?: string;
   reference?: string;
+  date?: string;
 }
 
 export async function adjustStock(input: AdjustStockInput) {
+  const createdAt = parseDate(input.date);
   return prisma.$transaction(async (tx) => {
     const stockItem = await getOrCreateStockItem(tx, input.flavourId, input.containerId);
     const previous = stockItem.quantity;
@@ -184,6 +202,7 @@ export async function adjustStock(input: AdjustStockInput) {
         newStockSource: delta < 0 ? input.newQuantity : undefined,
         note: input.note,
         reference: input.reference,
+        ...(createdAt ? { createdAt } : {}),
       },
       include: { flavour: { include: { product: true } }, destContainer: true, sourceContainer: true },
     });

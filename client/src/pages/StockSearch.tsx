@@ -5,6 +5,7 @@ import { Container, StockRow } from "../types";
 import { Loading, ErrorState, EmptyState } from "../components/Feedback";
 import { StockActionModal } from "../components/StockActionModal";
 import { FlavourHistoryModal } from "../components/FlavourHistoryModal";
+import { NumberInput } from "../components/NumberInput";
 import { formatQty } from "../lib/format";
 
 interface FlavourGroup {
@@ -176,11 +177,11 @@ export function StockSearch() {
           </div>
           <div>
             <label className="label">Min quantity</label>
-            <input type="number" className="input" value={minQty} onChange={(e) => setMinQty(e.target.value)} />
+            <NumberInput value={minQty} onChange={(e) => setMinQty(e.target.value)} />
           </div>
           <div>
             <label className="label">Max quantity</label>
-            <input type="number" className="input" value={maxQty} onChange={(e) => setMaxQty(e.target.value)} />
+            <NumberInput value={maxQty} onChange={(e) => setMaxQty(e.target.value)} />
           </div>
           <div className="col-span-2 flex items-end sm:col-span-2">
             <button

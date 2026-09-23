@@ -79,9 +79,9 @@ stockRouter.get(
 stockRouter.post(
   "/add",
   asyncHandler(async (req, res) => {
-    const { flavourId, containerId, quantity, note, reference } = req.body;
+    const { flavourId, containerId, quantity, note, reference, date } = req.body;
     if (!flavourId || !containerId) throw new AppError("flavourId and containerId are required.");
-    const tx = await addStock({ flavourId, containerId, quantity: Number(quantity), note, reference });
+    const tx = await addStock({ flavourId, containerId, quantity: Number(quantity), note, reference, date });
     res.status(201).json(tx);
   })
 );
@@ -89,7 +89,7 @@ stockRouter.post(
 stockRouter.post(
   "/remove",
   asyncHandler(async (req, res) => {
-    const { flavourId, containerId, quantity, note, reference, allowNegative } = req.body;
+    const { flavourId, containerId, quantity, note, reference, allowNegative, date } = req.body;
     if (!flavourId || !containerId) throw new AppError("flavourId and containerId are required.");
     const tx = await removeStock({
       flavourId,
@@ -98,6 +98,7 @@ stockRouter.post(
       note,
       reference,
       allowNegative: Boolean(allowNegative),
+      date,
     });
     res.status(201).json(tx);
   })
@@ -106,7 +107,7 @@ stockRouter.post(
 stockRouter.post(
   "/transfer",
   asyncHandler(async (req, res) => {
-    const { flavourId, sourceContainerId, destContainerId, quantity, note, reference, allowNegative } = req.body;
+    const { flavourId, sourceContainerId, destContainerId, quantity, note, reference, allowNegative, date } = req.body;
     if (!flavourId || !sourceContainerId || !destContainerId) {
       throw new AppError("flavourId, sourceContainerId and destContainerId are required.");
     }
@@ -118,6 +119,7 @@ stockRouter.post(
       note,
       reference,
       allowNegative: Boolean(allowNegative),
+      date,
     });
     res.status(201).json(tx);
   })
@@ -126,10 +128,10 @@ stockRouter.post(
 stockRouter.post(
   "/adjust",
   asyncHandler(async (req, res) => {
-    const { flavourId, containerId, newQuantity, note, reference } = req.body;
+    const { flavourId, containerId, newQuantity, note, reference, date } = req.body;
     if (!flavourId || !containerId) throw new AppError("flavourId and containerId are required.");
     if (newQuantity === undefined || newQuantity === null) throw new AppError("newQuantity is required.");
-    const tx = await adjustStock({ flavourId, containerId, newQuantity: Number(newQuantity), note, reference });
+    const tx = await adjustStock({ flavourId, containerId, newQuantity: Number(newQuantity), note, reference, date });
     res.status(201).json(tx);
   })
 );
@@ -143,7 +145,7 @@ interface BulkLine {
 stockRouter.post(
   "/bulk",
   asyncHandler(async (req, res) => {
-    const { type, containerId, sourceContainerId, destContainerId, lines, note, reference, allowNegative } = req.body as {
+    const { type, containerId, sourceContainerId, destContainerId, lines, note, reference, allowNegative, date } = req.body as {
       type: "ADD" | "REMOVE" | "TRANSFER";
       containerId?: string;
       sourceContainerId?: string;
@@ -152,6 +154,7 @@ stockRouter.post(
       note?: string;
       reference?: string;
       allowNegative?: boolean;
+      date?: string;
     };
 
     if (!type || !Array.isArray(lines) || lines.length === 0) {
@@ -167,7 +170,7 @@ stockRouter.post(
       try {
         if (type === "ADD") {
           if (!containerId) throw new AppError("containerId is required for bulk add.");
-          results.push(await addStock({ flavourId: line.flavourId, containerId, quantity: line.quantity, note, reference, batchId }));
+          results.push(await addStock({ flavourId: line.flavourId, containerId, quantity: line.quantity, note, reference, batchId, date }));
         } else if (type === "REMOVE") {
           if (!containerId) throw new AppError("containerId is required for bulk remove.");
           results.push(
@@ -179,6 +182,7 @@ stockRouter.post(
               reference,
               allowNegative: Boolean(allowNegative),
               batchId,
+              date,
             })
           );
         } else if (type === "TRANSFER") {
@@ -195,6 +199,7 @@ stockRouter.post(
               reference,
               allowNegative: Boolean(allowNegative),
               batchId,
+              date,
             })
           );
         } else {

@@ -10,8 +10,14 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* No up/down spinner on number inputs — typing the exact value is the only way to change quantity */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
-  opacity: 1;
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 @layer components {

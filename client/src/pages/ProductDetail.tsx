@@ -6,6 +6,7 @@ import { Container, FlavourDetail, ProductDetail as ProductDetailType, Transacti
 import { Loading, ErrorState } from "../components/Feedback";
 import { StockActionModal } from "../components/StockActionModal";
 import { TransactionList } from "../components/TransactionList";
+import { NumberInput } from "../components/NumberInput";
 import { useToast } from "../components/ToastProvider";
 import { formatQty } from "../lib/format";
 
@@ -179,7 +180,7 @@ function AddFlavourModal({ productId, onClose }: { productId: string; onClose: (
           </div>
           <div>
             <label className="label">Low stock threshold</label>
-            <input type="number" className="input" value={lowStockThreshold} onChange={(e) => setLowStockThreshold(e.target.value)} />
+            <NumberInput value={lowStockThreshold} onChange={(e) => setLowStockThreshold(e.target.value)} />
           </div>
           {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
           <button className="btn-primary w-full py-3" disabled={!nameEn.trim() || mutation.isPending} onClick={() => mutation.mutate()}>

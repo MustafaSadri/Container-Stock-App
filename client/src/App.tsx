@@ -13,7 +13,7 @@ import { Transactions } from "./pages/Transactions";
 export default function App() {
   return (
     <ToastProvider>
-      <div className="min-h-screen bg-slate-50 pb-16 sm:pb-0">
+      <div className="min-h-screen bg-slate-50 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] sm:pb-0">
         <NavBar />
         <main className="mx-auto max-w-6xl px-4 py-5">
           <Routes>

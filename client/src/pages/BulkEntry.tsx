@@ -4,7 +4,8 @@ import { api } from "../api/client";
 import { Container, Product, ProductDetail } from "../types";
 import { Loading, ErrorState } from "../components/Feedback";
 import { useToast } from "../components/ToastProvider";
-import { formatQty } from "../lib/format";
+import { NumberInput } from "../components/NumberInput";
+import { formatQty, toLocalDatetimeInputValue } from "../lib/format";
 
 type Mode = "ADD" | "REMOVE" | "TRANSFER";
 
@@ -15,8 +16,10 @@ export function BulkEntry() {
   const [containerId, setContainerId] = useState("");
   const [destContainerId, setDestContainerId] = useState("");
   const [note, setNote] = useState("");
+  const [date, setDate] = useState(() => toLocalDatetimeInputValue(new Date()));
   const [allowNegative, setAllowNegative] = useState(false);
   const [quantities, setQuantities] = useState<Record<string, string>>({});
+  const [bulkFillValue, setBulkFillValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [resultMsg, setResultMsg] = useState<string | null>(null);
 
@@ -61,6 +64,18 @@ export function BulkEntry() {
 
   const totalUnits = lines.reduce((s, l) => s + l.quantity, 0);
 
+  const applyToAll = () => {
+    if (!product || !bulkFillValue) return;
+    const next: Record<string, string> = {};
+    for (const f of product.flavours) next[f.id] = bulkFillValue;
+    setQuantities(next);
+  };
+
+  const clearAll = () => {
+    setQuantities({});
+    setBulkFillValue("");
+  };
+
   const mutation = useMutation({
     mutationFn: () =>
       api.post<{ succeeded: number; failed: number; errors: { flavourId: string; error: string }[] }>("/stock/bulk", {
@@ -71,6 +86,7 @@ export function BulkEntry() {
         lines,
         note: note || undefined,
         allowNegative,
+        date: date ? new Date(date).toISOString() : undefined,
       }),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ["stock"] });
@@ -85,6 +101,7 @@ export function BulkEntry() {
       } else {
         toast(`Saved: ${res.succeeded} flavour${res.succeeded === 1 ? "" : "s"} updated`);
         setQuantities({});
+        setBulkFillValue("");
         setNote("");
         setResultMsg(null);
       }
@@ -201,9 +218,15 @@ export function BulkEntry() {
           </label>
         )}
 
-        <div>
-          <label className="label">Note / reference (optional, applies to all lines)</label>
-          <input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Weekly restock, PO #45" />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label className="label">Date &amp; time (applies to all lines)</label>
+            <input type="datetime-local" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+          <div>
+            <label className="label">Note / reference (optional, applies to all lines)</label>
+            <input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Weekly restock, PO #45" />
+          </div>
         </div>
       </div>
 
@@ -214,27 +237,53 @@ export function BulkEntry() {
             {totalUnits > 0 && <span className="badge bg-brand-50 text-brand-700">{formatQty(totalUnits)} units · {lines.length} flavours</span>}
           </div>
 
+          {product && (
+            <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 p-2">
+              <span className="text-xs text-slate-500">Same quantity for all:</span>
+              <NumberInput
+                min={0}
+                className="w-24"
+                placeholder="e.g. 50"
+                value={bulkFillValue}
+                onChange={(e) => setBulkFillValue(e.target.value)}
+              />
+              <button className="btn-secondary px-3 py-1.5 text-xs" disabled={!bulkFillValue} onClick={applyToAll}>
+                Apply to all
+              </button>
+              <button className="btn-secondary ml-auto px-3 py-1.5 text-xs" onClick={clearAll}>
+                Clear all
+              </button>
+            </div>
+          )}
+
           {loadingProduct && <Loading />}
           {product && (
             <div className="space-y-1.5">
-              {product.flavours.map((f) => (
-                <div key={f.id} className="flex items-center gap-3 border-b border-slate-100 py-1.5 last:border-0">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm text-slate-800">{f.nameEn}</p>
-                    {containerId && (
-                      <p className="text-[11px] text-slate-400">Currently: {formatQty(currentQtyFor(f.id, containerId))}</p>
-                    )}
+              {product.flavours.map((f) => {
+                const hasValue = Boolean(quantities[f.id]);
+                return (
+                  <div
+                    key={f.id}
+                    className={`flex items-center gap-3 rounded-lg border-b border-slate-100 px-2 py-1.5 transition-colors last:border-0 ${
+                      hasValue ? "bg-brand-50" : ""
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm text-slate-800">{f.nameEn}</p>
+                      {containerId && (
+                        <p className="text-[11px] text-slate-400">Currently: {formatQty(currentQtyFor(f.id, containerId))}</p>
+                      )}
+                    </div>
+                    <NumberInput
+                      min={0}
+                      className="w-24 text-right"
+                      placeholder="0"
+                      value={quantities[f.id] ?? ""}
+                      onChange={(e) => setQuantities((q) => ({ ...q, [f.id]: e.target.value }))}
+                    />
                   </div>
-                  <input
-                    type="number"
-                    min={0}
-                    className="input w-24 text-right"
-                    placeholder="0"
-                    value={quantities[f.id] ?? ""}
-                    onChange={(e) => setQuantities((q) => ({ ...q, [f.id]: e.target.value }))}
-                  />
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -243,7 +292,11 @@ export function BulkEntry() {
       {error && <ErrorState message={error} />}
       {resultMsg && <ErrorState message={resultMsg} />}
 
-      <button className="btn-primary sticky bottom-20 w-full py-3.5 shadow-lg sm:bottom-4" disabled={!canSubmit || mutation.isPending} onClick={() => mutation.mutate()}>
+      <button
+        className="btn-primary sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] w-full py-3.5 shadow-lg sm:bottom-4"
+        disabled={!canSubmit || mutation.isPending}
+        onClick={() => mutation.mutate()}
+      >
         {mutation.isPending
           ? "Saving..."
           : `${mode === "ADD" ? "Add" : mode === "REMOVE" ? "Remove" : "Transfer"} ${totalUnits > 0 ? formatQty(totalUnits) + " units" : "stock"}`}
