@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api, qs } from "../api/client";
 import { Container, Transaction, TransactionType } from "../types";
 import { Loading, ErrorState, EmptyState } from "../components/Feedback";
+import { DeleteTransactionButton } from "../components/DeleteTransactionButton";
 import { formatDate, formatQty, transactionBadgeClass, transactionLabel } from "../lib/format";
 
 const TYPES: TransactionType[] = ["ADD", "REMOVE", "TRANSFER", "ADJUST", "IMPORT"];
@@ -105,7 +106,10 @@ export function Transactions() {
                     {t.note && <p className="truncate text-xs text-slate-400">Note: {t.note}</p>}
                     {t.reference && <p className="truncate text-xs text-slate-400">Ref: {t.reference}</p>}
                   </div>
-                  <span className="shrink-0 text-xs text-slate-400">{formatDate(t.createdAt)}</span>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="text-xs text-slate-400">{formatDate(t.createdAt)}</span>
+                    <DeleteTransactionButton transactionId={t.id} label={transactionLabel(t)} />
+                  </div>
                 </div>
               </div>
             ))}

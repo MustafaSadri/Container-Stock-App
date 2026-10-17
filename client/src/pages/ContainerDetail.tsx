@@ -5,8 +5,9 @@ import { api, qs } from "../api/client";
 import { Container, ContainerDetail as ContainerDetailType, Transaction } from "../types";
 import { Loading, ErrorState, EmptyState } from "../components/Feedback";
 import { StockActionModal } from "../components/StockActionModal";
+import { TransactionList } from "../components/TransactionList";
 import { useToast } from "../components/ToastProvider";
-import { formatQty, formatDate, transactionLabel, transactionBadgeClass } from "../lib/format";
+import { formatQty } from "../lib/format";
 
 export function ContainerDetail() {
   const { id } = useParams<{ id: string }>();
@@ -112,24 +113,7 @@ export function ContainerDetail() {
 
       <div className="card p-4">
         <h2 className="mb-3 text-sm font-semibold text-slate-900">Recent activity in this container</h2>
-        {!history || history.transactions.length === 0 ? (
-          <p className="py-4 text-center text-xs text-slate-400">No activity yet.</p>
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {history.transactions.map((t) => (
-              <li key={t.id} className="flex items-center justify-between gap-2 py-2 text-xs">
-                <div className="min-w-0">
-                  <span className={`badge mr-2 ${transactionBadgeClass(t.type)}`}>{t.type}</span>
-                  <span className="text-slate-700">{transactionLabel(t)}</span>
-                  <p className="truncate text-slate-400">
-                    {t.flavour.product.name} — {t.flavour.nameEn}
-                  </p>
-                </div>
-                <span className="shrink-0 text-slate-400">{formatDate(t.createdAt)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <TransactionList transactions={history?.transactions ?? []} showFlavour />
       </div>
 
       {actionFlavour && containers && id && (

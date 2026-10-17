@@ -1,7 +1,15 @@
 import { Transaction } from "../types";
 import { formatDate, transactionBadgeClass, transactionLabel } from "../lib/format";
+import { DeleteTransactionButton } from "./DeleteTransactionButton";
 
-export function TransactionList({ transactions }: { transactions: Transaction[] }) {
+interface Props {
+  transactions: Transaction[];
+  // Show which product/flavour each row belongs to — useful when the list spans many
+  // flavours (e.g. a container's activity feed); redundant when already filtered to one.
+  showFlavour?: boolean;
+}
+
+export function TransactionList({ transactions, showFlavour = false }: Props) {
   if (transactions.length === 0) {
     return <p className="py-4 text-center text-xs text-slate-400">No transactions yet.</p>;
   }
@@ -13,9 +21,17 @@ export function TransactionList({ transactions }: { transactions: Transaction[] 
           <div className="min-w-0">
             <span className={`badge mr-2 ${transactionBadgeClass(t.type)}`}>{t.type}</span>
             <span className="text-slate-700">{transactionLabel(t)}</span>
+            {showFlavour && (
+              <p className="truncate text-slate-400">
+                {t.flavour.product.name} — {t.flavour.nameEn}
+              </p>
+            )}
             {t.note && <p className="truncate text-slate-400">{t.note}</p>}
           </div>
-          <span className="shrink-0 text-slate-400">{formatDate(t.createdAt)}</span>
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="text-slate-400">{formatDate(t.createdAt)}</span>
+            <DeleteTransactionButton transactionId={t.id} label={transactionLabel(t)} />
+          </div>
         </li>
       ))}
     </ul>

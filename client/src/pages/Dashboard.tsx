@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { DashboardData } from "../types";
 import { Loading, ErrorState } from "../components/Feedback";
+import { DeleteTransactionButton } from "../components/DeleteTransactionButton";
 import { transactionLabel, formatDate, formatQty } from "../lib/format";
 
 export function Dashboard() {
@@ -86,9 +87,12 @@ export function Dashboard() {
           <ul className="divide-y divide-slate-100">
             {data.recentTransactions.map((t) => (
               <li key={t.id} className="py-2 text-xs">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <span className="font-medium text-slate-800">{transactionLabel(t)}</span>
-                  <span className="text-slate-400">{formatDate(t.createdAt)}</span>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="text-slate-400">{formatDate(t.createdAt)}</span>
+                    <DeleteTransactionButton transactionId={t.id} label={transactionLabel(t)} />
+                  </div>
                 </div>
                 <p className="truncate text-slate-500">
                   {t.flavour.product.name} — {t.flavour.nameEn}

@@ -208,3 +208,48 @@ export async function adjustStock(input: AdjustStockInput) {
     });
   });
 }
+
+async function adjustStockItemQuantity(tx: Tx, flavourId: string, containerId: string, delta: number) {
+  const stockItem = await getOrCreateStockItem(tx, flavourId, containerId);
+  await tx.stockItem.update({ where: { id: stockItem.id }, data: { quantity: stockItem.quantity + delta } });
+}
+
+// Deletes a transaction and reverses the stock change it made, bringing the affected
+// container(s) back to what they would be if the transaction had never happened — regardless
+// of what other transactions happened before or after it, since a transaction's effect is
+// just a delta applied to the running balance.
+export async function deleteTransaction(transactionId: string) {
+  return prisma.$transaction(async (tx) => {
+    const transaction = await tx.transaction.findUnique({ where: { id: transactionId } });
+    if (!transaction) throw new AppError("Transaction not found.", 404);
+
+    switch (transaction.type) {
+      case TransactionType.ADD:
+      case TransactionType.IMPORT:
+        if (!transaction.destContainerId) throw new AppError("Transaction is missing its destination container.");
+        await adjustStockItemQuantity(tx, transaction.flavourId, transaction.destContainerId, -transaction.quantity);
+        break;
+      case TransactionType.REMOVE:
+        if (!transaction.sourceContainerId) throw new AppError("Transaction is missing its source container.");
+        await adjustStockItemQuantity(tx, transaction.flavourId, transaction.sourceContainerId, transaction.quantity);
+        break;
+      case TransactionType.TRANSFER:
+        if (!transaction.sourceContainerId || !transaction.destContainerId) {
+          throw new AppError("Transaction is missing a source or destination container.");
+        }
+        await adjustStockItemQuantity(tx, transaction.flavourId, transaction.sourceContainerId, transaction.quantity);
+        await adjustStockItemQuantity(tx, transaction.flavourId, transaction.destContainerId, -transaction.quantity);
+        break;
+      case TransactionType.ADJUST: {
+        const containerId = transaction.destContainerId ?? transaction.sourceContainerId;
+        if (!containerId) throw new AppError("Transaction is missing its container.");
+        await adjustStockItemQuantity(tx, transaction.flavourId, containerId, -transaction.quantity);
+        break;
+      }
+      default:
+        throw new AppError(`Cannot roll back unknown transaction type: ${transaction.type}`);
+    }
+
+    await tx.transaction.delete({ where: { id: transactionId } });
+  });
+}

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../db";
 import { asyncHandler } from "../middleware/errorHandler";
+import { deleteTransaction } from "../services/stockService";
 
 export const transactionsRouter = Router();
 
@@ -65,5 +66,15 @@ transactionsRouter.get(
     ]);
 
     res.json({ total, page: Number(page) || 1, pageSize: take, transactions });
+  })
+);
+
+// Deletes a transaction and rolls back the stock change it made, so the affected
+// container(s) end up exactly as if it had never happened.
+transactionsRouter.delete(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    await deleteTransaction(req.params.id);
+    res.status(204).send();
   })
 );
