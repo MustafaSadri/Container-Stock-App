@@ -89,7 +89,7 @@ stockRouter.post(
 stockRouter.post(
   "/remove",
   asyncHandler(async (req, res) => {
-    const { flavourId, containerId, quantity, note, reference, allowNegative, date } = req.body;
+    const { flavourId, containerId, quantity, note, reference, date } = req.body;
     if (!flavourId || !containerId) throw new AppError("flavourId and containerId are required.");
     const tx = await removeStock({
       flavourId,
@@ -97,7 +97,6 @@ stockRouter.post(
       quantity: Number(quantity),
       note,
       reference,
-      allowNegative: Boolean(allowNegative),
       date,
     });
     res.status(201).json(tx);
@@ -107,7 +106,7 @@ stockRouter.post(
 stockRouter.post(
   "/transfer",
   asyncHandler(async (req, res) => {
-    const { flavourId, sourceContainerId, destContainerId, quantity, note, reference, allowNegative, date } = req.body;
+    const { flavourId, sourceContainerId, destContainerId, quantity, note, reference, date } = req.body;
     if (!flavourId || !sourceContainerId || !destContainerId) {
       throw new AppError("flavourId, sourceContainerId and destContainerId are required.");
     }
@@ -118,7 +117,6 @@ stockRouter.post(
       quantity: Number(quantity),
       note,
       reference,
-      allowNegative: Boolean(allowNegative),
       date,
     });
     res.status(201).json(tx);
@@ -145,7 +143,7 @@ interface BulkLine {
 stockRouter.post(
   "/bulk",
   asyncHandler(async (req, res) => {
-    const { type, containerId, sourceContainerId, destContainerId, lines, note, reference, allowNegative, date } = req.body as {
+    const { type, containerId, sourceContainerId, destContainerId, lines, note, reference, date } = req.body as {
       type: "ADD" | "REMOVE" | "TRANSFER";
       containerId?: string;
       sourceContainerId?: string;
@@ -153,7 +151,6 @@ stockRouter.post(
       lines: BulkLine[];
       note?: string;
       reference?: string;
-      allowNegative?: boolean;
       date?: string;
     };
 
@@ -180,7 +177,6 @@ stockRouter.post(
               quantity: line.quantity,
               note,
               reference,
-              allowNegative: Boolean(allowNegative),
               batchId,
               date,
             })
@@ -197,7 +193,6 @@ stockRouter.post(
               quantity: line.quantity,
               note,
               reference,
-              allowNegative: Boolean(allowNegative),
               batchId,
               date,
             })

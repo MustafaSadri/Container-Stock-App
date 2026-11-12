@@ -17,7 +17,6 @@ export function BulkEntry() {
   const [destContainerId, setDestContainerId] = useState("");
   const [note, setNote] = useState("");
   const [date, setDate] = useState(() => toLocalDatetimeInputValue(new Date()));
-  const [allowNegative, setAllowNegative] = useState(false);
   const [quantities, setQuantities] = useState<Record<string, string>>({});
   const [bulkFillValue, setBulkFillValue] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +84,6 @@ export function BulkEntry() {
         destContainerId: mode === "TRANSFER" ? destContainerId : undefined,
         lines,
         note: note || undefined,
-        allowNegative,
         date: date ? new Date(date).toISOString() : undefined,
       }),
     onSuccess: (res) => {
@@ -205,18 +203,6 @@ export function BulkEntry() {
             </div>
           )}
         </div>
-
-        {(mode === "REMOVE" || mode === "TRANSFER") && (
-          <label className="flex items-center gap-2 text-xs text-slate-600">
-            <input
-              type="checkbox"
-              checked={allowNegative}
-              onChange={(e) => setAllowNegative(e.target.checked)}
-              className="h-4 w-4 rounded border-slate-300"
-            />
-            Allow going negative where stock is insufficient
-          </label>
-        )}
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>

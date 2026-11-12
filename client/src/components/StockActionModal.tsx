@@ -36,7 +36,6 @@ export function StockActionModal({
   const [newQuantity, setNewQuantity] = useState(currentQuantity !== undefined ? String(currentQuantity) : "");
   const [note, setNote] = useState("");
   const [date, setDate] = useState(() => toLocalDatetimeInputValue(new Date()));
-  const [allowNegative, setAllowNegative] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const qc = useQueryClient();
@@ -66,7 +65,6 @@ export function StockActionModal({
           containerId,
           quantity: Number(quantity),
           note: note || undefined,
-          allowNegative,
           date: isoDate,
         });
       }
@@ -77,7 +75,6 @@ export function StockActionModal({
           destContainerId,
           quantity: Number(quantity),
           note: note || undefined,
-          allowNegative,
           date: isoDate,
         });
       }
@@ -199,18 +196,6 @@ export function StockActionModal({
               placeholder="e.g. Invoice #123, restock, etc."
             />
           </div>
-
-          {(mode === "REMOVE" || mode === "TRANSFER") && (
-            <label className="flex items-center gap-2 text-xs text-slate-600">
-              <input
-                type="checkbox"
-                checked={allowNegative}
-                onChange={(e) => setAllowNegative(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300"
-              />
-              Allow this to go negative (force adjustment)
-            </label>
-          )}
 
           {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
 

@@ -72,7 +72,6 @@ export interface RemoveStockInput {
   quantity: number;
   note?: string;
   reference?: string;
-  allowNegative?: boolean;
   batchId?: string;
   date?: string;
 }
@@ -85,13 +84,6 @@ export async function removeStock(input: RemoveStockInput) {
     const stockItem = await getOrCreateStockItem(tx, input.flavourId, input.containerId);
     const previous = stockItem.quantity;
     const updated = previous - input.quantity;
-
-    if (updated < 0 && !input.allowNegative) {
-      throw new AppError(
-        `Not enough stock: only ${previous} available. Pass allowNegative to force this adjustment.`,
-        409
-      );
-    }
 
     await tx.stockItem.update({ where: { id: stockItem.id }, data: { quantity: updated } });
 
@@ -120,7 +112,6 @@ export interface TransferStockInput {
   quantity: number;
   note?: string;
   reference?: string;
-  allowNegative?: boolean;
   batchId?: string;
   date?: string;
 }
@@ -138,12 +129,6 @@ export async function transferStock(input: TransferStockInput) {
 
     const previousSource = sourceItem.quantity;
     const updatedSource = previousSource - input.quantity;
-    if (updatedSource < 0 && !input.allowNegative) {
-      throw new AppError(
-        `Not enough stock in source container: only ${previousSource} available. Pass allowNegative to force this transfer.`,
-        409
-      );
-    }
     const previousDest = destItem.quantity;
     const updatedDest = previousDest + input.quantity;
 
